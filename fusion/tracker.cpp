@@ -18,11 +18,15 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
             const auto &lidar_obj = lidar_obj_list->objs[m.first];
             const auto &global_obj = global_obj_list_->objs[m.second];
             lidar_mea.sensor_type = SensorType::LIDAR;
-            Eigen::VectorXd meas(5);
+            Eigen::VectorXd meas(9);
             meas << lidar_obj->x,
                 lidar_obj->y,
                 lidar_obj->velo_x,
                 lidar_obj->velo_y,
+                global_obj->ux,
+                global_obj->vy,
+                global_obj->width_2d,
+                global_obj->height_2d,
                 lidar_obj->label;
             // std::cout << "lidar measurement: " << lidar_obj->ToString() << std::endl;
             // std::cout << "global object: " << global_obj->ToString() << std::endl;
@@ -33,17 +37,26 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
                 global_obj->y,
                 global_obj->velo_x,
                 global_obj->velo_y,
+                global_obj->ux,
+                global_obj->vy,
+                global_obj->width_2d,
+                global_obj->height_2d,
                 global_obj->label;
             state.time_ns = global_obj->time_ns;
             state.meas = meas;
             // update fusion_obj with lidar_measurement using KalmanFilter
-            motion_filters_[m.second]->UpdateMotion(state, lidar_mea);
-            global_obj->x = motion_filters_[m.second]->GetState()[0];
-            global_obj->y = motion_filters_[m.second]->GetState()[1];
+            // motion_filters_[m.second]->UpdateMotion(state, lidar_mea);
+            motion_filters_[m.second]->UpdateMotionAndAttr(state, lidar_mea);
+            global_obj->x = motion_filters_[m.second]->GetMotionAndAttrState()[0];
+            global_obj->y = motion_filters_[m.second]->GetMotionAndAttrState()[1];
             global_obj->z = lidar_obj->z;
-            global_obj->velo_x = motion_filters_[m.second]->GetState()[2];
-            global_obj->velo_y = motion_filters_[m.second]->GetState()[3];
-            global_obj->label = motion_filters_[m.second]->GetState()[4];
+            global_obj->velo_x = motion_filters_[m.second]->GetMotionAndAttrState()[2];
+            global_obj->velo_y = motion_filters_[m.second]->GetMotionAndAttrState()[3];
+            global_obj->ux = motion_filters_[m.second]->GetMotionAndAttrState()[4];
+            global_obj->vy = motion_filters_[m.second]->GetMotionAndAttrState()[5];
+            global_obj->width_2d = motion_filters_[m.second]->GetMotionAndAttrState()[6];
+            global_obj->height_2d = motion_filters_[m.second]->GetMotionAndAttrState()[7];
+            global_obj->label = motion_filters_[m.second]->GetMotionAndAttrState()[8];
             global_obj->length = lidar_obj->length;
             global_obj->width = lidar_obj->width;
             global_obj->height = lidar_obj->height;
@@ -74,6 +87,7 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
             global_obj_list_->objs.push_back(new_obj);
             std::shared_ptr<FusionEKF> motion_filter =
                 std::make_shared<FusionEKF>(FusionEKF());
+            motion_filter->Init();
             motion_filters_.push_back(motion_filter);
             std::cout << "create new global object: " << new_obj->ToString() << std::endl;
         }
@@ -121,28 +135,34 @@ bool Tracker::Update(const CameraObjectListPtr &camera_obj_list,
     for (auto m : map) {
         if (m.second >= 0) {
             const auto& cam_obj = camera_obj_list->objs[m.first];
+            const auto& global_obj = global_obj_list_->objs[m.second];
             Measurement cam_mea;
             cam_mea.time_ns = cam_obj->time_ns;
             cam_mea.sensor_type = SensorType::CAMERA;
-            Eigen::VectorXd meas(5);
-            meas << cam_obj->ux, cam_obj->vy, cam_obj->width_2d, cam_obj->height_2d, float(cam_obj->label);
+            Eigen::VectorXd meas(9);
+            meas << global_obj->x, global_obj->y, global_obj->velo_x, global_obj->velo_y,
+                    cam_obj->ux, cam_obj->vy, cam_obj->width_2d, cam_obj->height_2d, float(cam_obj->label);
             cam_mea.meas = meas;
             std::cout << "cam mea: " << cam_obj->ToString() << std::endl;
 
-            auto& global_obj = global_obj_list_->objs[m.second];
             State state;
             state.time_ns = global_obj->time_ns;
-            meas << global_obj->ux, global_obj->vy, global_obj->width_2d, global_obj->height_2d, float(global_obj->label); 
+            meas << global_obj->x, global_obj->y, global_obj->velo_x, global_obj->velo_y,
+                    global_obj->ux, global_obj->vy, global_obj->width_2d, global_obj->height_2d, float(global_obj->label); 
             state.meas = meas;
             std::cout << "global obj: " << global_obj->ToString() << std::endl;
 
             // Job4: update fusion_obj with camera_measurement using KalmanFilter
-            motion_filters_[m.second]->UpdateAttr(state, cam_mea);
-            global_obj->ux = motion_filters_[m.second]->GetAttrState()[0];
-            global_obj->vy = motion_filters_[m.second]->GetAttrState()[1];
-            global_obj->width_2d = motion_filters_[m.second]->GetAttrState()[2];
-            global_obj->height_2d = motion_filters_[m.second]->GetAttrState()[3];
-            global_obj->label = motion_filters_[m.second]->GetAttrState()[4];
+            motion_filters_[m.second]->UpdateMotionAndAttr(state, cam_mea);
+            global_obj->x = motion_filters_[m.second]->GetMotionAndAttrState()[0];
+            global_obj->y = motion_filters_[m.second]->GetMotionAndAttrState()[1];
+            global_obj->velo_x = motion_filters_[m.second]->GetMotionAndAttrState()[2];
+            global_obj->velo_y = motion_filters_[m.second]->GetMotionAndAttrState()[3];
+            global_obj->ux = motion_filters_[m.second]->GetMotionAndAttrState()[4];
+            global_obj->vy = motion_filters_[m.second]->GetMotionAndAttrState()[5];
+            global_obj->width_2d = motion_filters_[m.second]->GetMotionAndAttrState()[6];
+            global_obj->height_2d = motion_filters_[m.second]->GetMotionAndAttrState()[7];
+            global_obj->label = motion_filters_[m.second]->GetMotionAndAttrState()[8];
             std::cout << "after updated: " << cam_obj->ToString() << std::endl;
         } 
     }

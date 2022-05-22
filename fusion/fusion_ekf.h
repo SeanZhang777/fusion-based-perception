@@ -29,16 +29,22 @@ class FusionEKF {
     /**
      * Run the whole flow of the Kalman Filter from here.
      */
+    void Init();
     void UpdateMotion(const State &state, const Measurement &mea);
     void UpdateAttr(const State &state, const Measurement &mea);
+    void UpdateMotionAndAttr(const State &state, const Measurement &mea);
     Eigen::VectorXd GetState();
     Eigen::VectorXd GetAttrState();
+    Eigen::VectorXd GetMotionAndAttrState();
 
     // Kalman Filter update and prediction for motion 
     KalmanFilter motion_filter_;
 
     // Kalman Filter update and prediction for atrributes
     KalmanFilter attr_filter_;
+
+    // Kalman Filter update and prediction for motion and attr
+    KalmanFilter motion_attr_filter_;
 
   private:
     /**

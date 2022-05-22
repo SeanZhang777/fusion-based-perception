@@ -95,6 +95,25 @@ FusionEKF::FusionEKF() {
 */
 FusionEKF::~FusionEKF() {}
 
+void FusionEKF::Init() {
+    VectorXd x_in(9);
+    MatrixXd P_in, F_in, H_in, R_in, Q_in;
+    x_in << 0, 0, 0, 0, 0, 0, 0, 0, 0;  // x, y, vx, vy, u, v, width, height, label
+    P_in = MatrixXd(9, 9);
+    P_in.setIdentity();
+    F_in = MatrixXd(9, 9);
+    F_in.setIdentity();
+    H_in = MatrixXd(9, 9);
+    H_in.setIdentity();
+    F_in = MatrixXd(9, 9);
+    F_in.setIdentity();
+    R_in = MatrixXd(9, 9);
+    R_in.setIdentity();
+    Q_in = MatrixXd(9, 9);
+    Q_in.setIdentity();
+    motion_attr_filter_.Init(x_in, P_in, F_in, H_in, R_in, Q_in);
+}
+
 void FusionEKF::UpdateAttr(const State &state, const Measurement &mea) {
     attr_filter_.x_ = VectorXd(5);
     attr_filter_.F_ = F_camera_;
@@ -200,12 +219,78 @@ void FusionEKF::UpdateMotion(const State &state, const Measurement &measurement)
     motion_filter_.Update(measurement.meas);
 }
 
+void FusionEKF::UpdateMotionAndAttr(const State &state, const Measurement &measurement) {
+    motion_attr_filter_.x_ << state.meas;
+    float dt = measurement.time_ns - state.time_ns;  //  in seconds
+    dt = dt > 0 ? dt : 0;
+    float dt_2 = dt * dt;
+    motion_attr_filter_.F_(0, 2) = dt;
+    motion_attr_filter_.F_(1, 3) = dt;
+
+    if (measurement.sensor_type == SensorType::LIDAR) {
+        // Q
+        motion_attr_filter_.Q_(0, 0) = dt * noise_ax;  // qx
+        motion_attr_filter_.Q_(1, 1) = dt * noise_ay;  // qy
+        motion_attr_filter_.Q_(2, 2) = dt_2 * noise_ax;  // qvx
+        motion_attr_filter_.Q_(3, 3) = dt_2 * noise_ax;  // qvy
+        motion_attr_filter_.Q_(4, 4) = 0.001;  // qux
+        motion_attr_filter_.Q_(5, 5) = 0.001;  // quy
+        motion_attr_filter_.Q_(6, 6) = 0.001;  // qw
+        motion_attr_filter_.Q_(7, 7) = 0.001;  // qh
+        motion_attr_filter_.Q_(8, 8) = 0.001;  // ql
+
+        // predict
+        motion_attr_filter_.Predict();
+        
+        // update
+        motion_attr_filter_.R_.setIdentity();
+        motion_attr_filter_.R_ *= 1000;
+        motion_attr_filter_.R_(0, 0) = 0.0225;
+        motion_attr_filter_.R_(1, 1) = 0.0225;
+        motion_attr_filter_.R_(2, 2) = 0.0225;
+        motion_attr_filter_.R_(3, 3) = 0.0225;
+        motion_attr_filter_.R_(8, 8) = 5;
+
+        motion_attr_filter_.Update(measurement.meas);
+
+    } else if (measurement.sensor_type == SensorType::CAMERA) {
+        // Q
+        motion_attr_filter_.Q_(0, 0) = 0.001;  // qx
+        motion_attr_filter_.Q_(1, 1) = 0.001;  // qy
+        motion_attr_filter_.Q_(2, 2) = 0.001;  // qvx
+        motion_attr_filter_.Q_(3, 3) = 0.001;  // qvy
+        motion_attr_filter_.Q_(4, 4) = dt*noise_attr_;  // qux
+        motion_attr_filter_.Q_(5, 5) = dt*noise_attr_;  // quy
+        motion_attr_filter_.Q_(6, 6) = dt*noise_attr_;  // qw
+        motion_attr_filter_.Q_(7, 7) = dt*noise_attr_;  // qh
+        motion_attr_filter_.Q_(8, 8) = dt*noise_attr_;  // ql
+
+        // predict
+        motion_attr_filter_.Predict();
+        
+        // update
+        motion_attr_filter_.R_.setIdentity();
+        motion_attr_filter_.R_ *= 1000;
+        motion_attr_filter_.R_(4, 4) = 0.0225;
+        motion_attr_filter_.R_(5, 5) = 0.0225;
+        motion_attr_filter_.R_(6, 6) = 0.0225;
+        motion_attr_filter_.R_(7, 7) = 0.0225;
+        motion_attr_filter_.R_(8, 8) = 0.0225;
+
+        motion_attr_filter_.Update(measurement.meas);
+    }
+}
+
 VectorXd FusionEKF::GetState() {
     return motion_filter_.x_;
 }
 
 VectorXd FusionEKF::GetAttrState() {
     return attr_filter_.x_;
+}
+
+VectorXd FusionEKF::GetMotionAndAttrState() {
+    return motion_attr_filter_.x_;
 }
 
 VectorXd FusionEKF::CalculateRMSE(const vector<VectorXd> &estimations,
