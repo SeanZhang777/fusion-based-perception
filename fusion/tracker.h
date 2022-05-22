@@ -32,6 +32,13 @@ class Tracker {
     void GetGlobalObjects(const FusionObjectListPtr &res);
 
  private:
+    inline int GetNextTrackId() {
+        if (global_track_id_ == std::numeric_limits<int>::max()) {
+            global_track_id_ = 0;
+        }
+    return global_track_id_++;
+    }
+
     void PerodicallyUpdateLifeDuration();
 
     std::vector<std::shared_ptr<FusionEKF>> motion_filters_;
@@ -42,6 +49,8 @@ class Tracker {
     float dist_thres_ = 1.0;
     float iou_thres_ = 0.5;
     FusionObjectListPtr global_obj_list_;
+
+    int global_track_id_ = 0;
 };
 
 }  // namespace fusion

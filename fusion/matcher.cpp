@@ -217,7 +217,7 @@ float Matcher::IoUCamToFusion(
         tgt.height = fusion_obj->height;
         tgt.length = fusion_obj->length;
 
-        dist = IoUIn2D(pred, tgt, extrinsic_camera_to_baselink_.inverse(), cam_intrinsic_);
+        dist = 1 - IoUIn2D(pred, tgt, extrinsic_camera_to_baselink_.inverse(), cam_intrinsic_);
     } else if (main_sensor_ == SensorType::CAMERA) {
         BBox2D pred;
         pred.x = cam_obj->ux;
@@ -231,7 +231,7 @@ float Matcher::IoUCamToFusion(
         tgt.width = fusion_obj->width_2d;
         tgt.height = fusion_obj->height_2d;
 
-        dist = IoUIn2D(pred, tgt); 
+        dist = 1 - IoUIn2D(pred, tgt); 
     }
     return dist;
 }
@@ -239,7 +239,7 @@ float Matcher::IoUCamToFusion(
 float Matcher::IoULiDARToFusion(const LiDARObjectPtr& lidar_obj, const FusionObjectPtr& fusion_obj) {
     // return std::sqrt(std::pow(lidar_obj->x - fusion_obj->x, 2) +
     //         std::pow(lidar_obj->y - fusion_obj->y, 2));
-    return IoUIn3D(lidar_obj, fusion_obj);
+    return 1 - IoUIn3D(lidar_obj, fusion_obj);
 }
 
 float Matcher::IoURadarToFusion(const RadarObjectPtr& radar_obj, const FusionObjectPtr& fusion_obj) {
@@ -262,7 +262,7 @@ float Matcher::IoURadarToFusion(const RadarObjectPtr& radar_obj, const FusionObj
         tgt.width = fusion_obj->width_2d;
         tgt.height = fusion_obj->height_2d;
 
-        dist = IoUIn2D(tgt, pred, extrinsic_radar_to_camera_, cam_intrinsic_);
+        dist = 1 - IoUIn2D(tgt, pred, extrinsic_radar_to_camera_, cam_intrinsic_);
     }
     return dist;
 }

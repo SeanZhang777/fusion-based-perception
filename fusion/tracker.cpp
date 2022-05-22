@@ -58,7 +58,7 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
             const auto &lidar_obj = lidar_obj_list->objs[m.first];
             new_obj->time_ns = lidar_obj->time_ns;
             // TODO: we should maintain a global unique id for new object
-            new_obj->id = lidar_obj->id;
+            new_obj->id = GetNextTrackId();
             new_obj->x = lidar_obj->x;
             new_obj->y = lidar_obj->y; new_obj->z = lidar_obj->z;
             new_obj->length = lidar_obj->length;
