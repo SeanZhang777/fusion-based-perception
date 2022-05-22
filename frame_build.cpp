@@ -61,6 +61,7 @@ namespace proto_input
         lo->length = raw_lo.length;
         lo->width = raw_lo.width;
         lo->height = raw_lo.height;
+        lo->theta = raw_lo.theta;
         lo->velo_x = raw_lo.velocity.x;
         lo->velo_y = raw_lo.velocity.y;
         lo->velo_z = raw_lo.velocity.z;
@@ -72,10 +73,77 @@ namespace proto_input
         auto co = std::make_shared<kit::perception::fusion::CameraObject>();
         co->time_ns = time;
         co->id = raw_co.id;
+        co->x = raw_co.anchor_point.x;
+        co->y = raw_co.anchor_point.y;
+        co->z = raw_co.anchor_point.z;
+        co->length = raw_co.length;
+        co->width = raw_co.width;
+        co->height = raw_co.height;
+        co->theta = raw_co.theta;
+        co->velo_x = raw_co.velocity.x;
+        co->velo_y = raw_co.velocity.y;
+        co->velo_z = raw_co.velocity.z;
         co->ux = (raw_co.bbox2d.xmax + raw_co.bbox2d.xmin) / 2;
         co->vy = (raw_co.bbox2d.ymax + raw_co.bbox2d.ymin) / 2;
-        co->width = raw_co.bbox2d.xmax - raw_co.bbox2d.xmin;
-        co->height = raw_co.bbox2d.ymax - raw_co.bbox2d.ymin;
+        co->width_2d = raw_co.bbox2d.xmax - raw_co.bbox2d.xmin;
+        co->height_2d = raw_co.bbox2d.ymax - raw_co.bbox2d.ymin;
         return co;
+    }
+
+    Eigen::Affine3d Pose2Affine(const proto_input::Location &pose) {
+        Eigen::Translation3d trans(pose.pose.position.x,
+                                   pose.pose.position.y,
+                                   pose.pose.position.z);
+        Eigen::Quaterniond quat(pose.pose.orientation.qw,
+                                pose.pose.orientation.qx,
+                                pose.pose.orientation.qy,
+                                pose.pose.orientation.qz);
+        Eigen::Affine3d affine = trans * quat;
+        return affine;
+    }
+
+    void TransformLiDAR2Baselink(
+        const proto_input::Location &pose, LidarObject& raw_lo) {
+        Eigen::Affine3d affine = Pose2Affine(pose);
+        Eigen::Vector3d anchor(raw_lo.anchor_point.x, 
+                               raw_lo.anchor_point.y,
+                               raw_lo.anchor_point.z);
+        anchor = affine.inverse() * anchor;
+        raw_lo.anchor_point.x = anchor(0);
+        raw_lo.anchor_point.y = anchor(1);
+        raw_lo.anchor_point.z = anchor(2);
+        Eigen::Vector3d vel(raw_lo.velocity.x,
+                            raw_lo.velocity.y,
+                            raw_lo.velocity.z);
+        vel = affine.inverse().rotation() * vel;
+        raw_lo.velocity.x = vel(0);
+        raw_lo.velocity.y = vel(1);
+        raw_lo.velocity.z = vel(2);
+
+        Eigen::Vector3d eulers = affine.rotation().matrix().eulerAngles(2,1,0);
+        raw_lo.theta -= eulers(0);
+    }
+
+    void TransformCamera2Baselink(
+        const proto_input::Location &pose, CameraObject& raw_co) {
+        Eigen::Affine3d affine = Pose2Affine(pose);
+        Eigen::Vector3d anchor(raw_co.anchor_point.x, 
+                               raw_co.anchor_point.y,
+                               raw_co.anchor_point.z);
+        anchor = affine.inverse() * anchor;
+        raw_co.anchor_point.x = anchor(0);
+        raw_co.anchor_point.y = anchor(1);
+        raw_co.anchor_point.z = anchor(2);
+
+        Eigen::Vector3d vel(raw_co.velocity.x,
+                            raw_co.velocity.y,
+                            raw_co.velocity.z);
+        vel = affine.inverse().rotation() * vel;
+        raw_co.velocity.x = vel(0);
+        raw_co.velocity.y = vel(1);
+        raw_co.velocity.z = vel(2);
+
+        Eigen::Vector3d eulers = affine.rotation().matrix().eulerAngles(2,1,0);
+        raw_co.theta -= eulers(0);
     }
 }

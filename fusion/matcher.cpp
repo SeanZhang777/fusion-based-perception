@@ -40,7 +40,7 @@ Matcher::Matcher(const std::string& config_file) :
         Eigen::Translation3d translation(lidar_translation["x"].as<double>(), lidar_translation["y"].as<double>(), lidar_translation["z"].as<double>());
         Eigen::Quaterniond quater(lidar_rotate["w"].as<double>(), lidar_rotate["x"].as<double>(), lidar_rotate["y"].as<double>(), lidar_rotate["z"].as<double>());
         extrinsic_lidar_to_baselink_ = translation * quater.toRotationMatrix();
-        extrinsic_camera_to_baselink_ = extrinsic_camera_to_lidar_ * extrinsic_lidar_to_baselink_; 
+        extrinsic_camera_to_baselink_ = extrinsic_lidar_to_baselink_ * extrinsic_camera_to_lidar_; 
     }
 }
 
@@ -206,8 +206,8 @@ float Matcher::IoUCamToFusion(
         BBox2D pred;
         pred.x = cam_obj->ux;
         pred.y = cam_obj->vy;
-        pred.width = cam_obj->width;
-        pred.height = cam_obj->height;
+        pred.width = cam_obj->width_2d;
+        pred.height = cam_obj->height_2d;
 
         BBox3D tgt;
         tgt.x = fusion_obj->x;
@@ -222,8 +222,8 @@ float Matcher::IoUCamToFusion(
         BBox2D pred;
         pred.x = cam_obj->ux;
         pred.y = cam_obj->vy;
-        pred.width = cam_obj->width;
-        pred.height = cam_obj->height;
+        pred.width = cam_obj->width_2d;
+        pred.height = cam_obj->height_2d;
 
         BBox2D tgt;
         tgt.x = fusion_obj->ux;
@@ -237,9 +237,9 @@ float Matcher::IoUCamToFusion(
 }
 
 float Matcher::IoULiDARToFusion(const LiDARObjectPtr& lidar_obj, const FusionObjectPtr& fusion_obj) {
-    return std::sqrt(std::pow(lidar_obj->x - fusion_obj->x, 2) +
-            std::pow(lidar_obj->y - fusion_obj->y, 2));
-    // return IoUIn3D(lidar_obj, fusion_obj);
+    // return std::sqrt(std::pow(lidar_obj->x - fusion_obj->x, 2) +
+    //         std::pow(lidar_obj->y - fusion_obj->y, 2));
+    return IoUIn3D(lidar_obj, fusion_obj);
 }
 
 float Matcher::IoURadarToFusion(const RadarObjectPtr& radar_obj, const FusionObjectPtr& fusion_obj) {
@@ -407,8 +407,8 @@ void Matcher::Match(const RadarObjectListPtr& radar_obj_list,
             BBox2D cam_box;
             cam_box.x = object->ux;
             cam_box.y = object->vy;
-            cam_box.width = object->width;
-            cam_box.height = object->height;
+            cam_box.width = object->width_2d;
+            cam_box.height = object->height_2d;
             // Check if target is within bbox
             // if((radar_obj_in_uv.x <= (object->ux + object->width / 2) +
             // matching_offset_in_ux_) &&
@@ -448,8 +448,8 @@ void Matcher::Match(const RadarObjectListPtr& radar_obj_list,
             fusion_obj->velo_y = matched_radar_obj->velo_y;
             fusion_obj->ux = object->ux;
             fusion_obj->vy = object->vy;
-            fusion_obj->width_2d = object->width;
-            fusion_obj->height_2d = object->height;
+            fusion_obj->width_2d = object->width_2d;
+            fusion_obj->height_2d = object->height_2d;
             fusion_obj->label = object->label;
             fusion_obj->confidence = object->confidence;
             fusion_obj->transformBy(extrinsic_radar_to_baselink_);

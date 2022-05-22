@@ -38,8 +38,14 @@ int main(int argc, char** argv)
     //printMregeRes(data_frame_seq);
 
     ros::NodeHandle nh;
-    ros::Publisher lidar_pub = nh.advertise<sensor_msgs::PointCloud>("lidar_det", 50);
-    ros::Publisher res_pub = nh.advertise<sensor_msgs::PointCloud>("fusion_result", 50);
+    // ros::Publisher lidar_pub = nh.advertise<sensor_msgs::PointCloud>("lidar_det", 50);
+    // ros::Publisher res_pub = nh.advertise<sensor_msgs::PointCloud>("fusion_result", 50);
+    ros::Publisher lidar_pub = 
+        nh.advertise<visualization_msgs::MarkerArray>("/lidar_obj", 50);
+    ros::Publisher camera_pub = 
+        nh.advertise<visualization_msgs::MarkerArray>("/camera_obj", 50);
+    ros::Publisher fusion_pub = 
+        nh.advertise<visualization_msgs::MarkerArray>("/fusion_obj", 50);
     ros::Rate r(2);
 
     //ezcfg::Interpreter is a protobuf interpreter that no need proto file. It refers to the struct define itself as proto file.
@@ -69,8 +75,10 @@ int main(int argc, char** argv)
             {
                 itp.lex.next();
                 itp.parse(raw_co);
+                proto_input::TransformCamera2Baselink(pose, raw_co);
                 co_list->objs.push_back(makeCameraObjectPtr(raw_co, std::get<0>(*it)));
             }
+            PublishCameraObjects(camera_pub, co_list);
             co_list->time_ns = std::get<0>(*it);
             frame->camera_objs = std::move(co_list);
             ++it;
@@ -85,12 +93,11 @@ int main(int argc, char** argv)
             {
                 itp.lex.next();
                 itp.parse(raw_lo);
-                raw_lo.anchor_point.x = raw_lo.anchor_point.x - pose.pose.position.x;
-                raw_lo.anchor_point.y = raw_lo.anchor_point.y - pose.pose.position.y;
-                raw_lo.anchor_point.z = raw_lo.anchor_point.z - pose.pose.position.z;
+                proto_input::TransformLiDAR2Baselink(pose, raw_lo);
                 lo_list->objs.push_back(makeLiDARObjectPtr(raw_lo, std::get<0>(*it)));
             }
-            lidar_pub.publish(transToPointCloud(*lo_list));
+            // lidar_pub.publish(transToPointCloud(*lo_list));
+            PublishLidarObjects(lidar_pub, lo_list);
             lo_list->time_ns = std::get<0>(*it);
             frame->lidar_objs = std::move(lo_list);
             ++it;
@@ -100,12 +107,12 @@ int main(int argc, char** argv)
         fusion.Update(frame);
         kit::perception::fusion::FusionObjectListPtr fusion_res = std::make_shared<kit::perception::fusion::FusionObjectList>(kit::perception::fusion::FusionObjectList());
         fusion.GetFusionResult(fusion_res);
-        
+        PublishFusionObjects(fusion_pub, fusion_res);
         //result output
         std::cout << "********************************************************************\n";
         for (size_t i = 0; i < fusion_res->objs.size(); i++)
             std::cout << fusion_res->objs[i]->ToString() << std::endl;
-        res_pub.publish(transToPointCloud(*fusion_res));
+        // res_pub.publish(transToPointCloud(*fusion_res));
         std::cout << "********************************************************************\n";
         r.sleep();
     }

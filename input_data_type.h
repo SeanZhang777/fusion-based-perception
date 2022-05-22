@@ -41,6 +41,7 @@ namespace proto_input
     struct LidarObject
     {
         int id;
+        double theta;
         Point3D velocity;
         double length;
         double width;
@@ -50,6 +51,12 @@ namespace proto_input
     struct CameraObject
     {
         int id;
+        double theta;
+        Point3D velocity;
+        double length;
+        double width;
+        double height;
+        Point3D anchor_point;
         BBox2D bbox2d;
     };
 }

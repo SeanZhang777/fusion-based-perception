@@ -47,6 +47,7 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
             global_obj->length = lidar_obj->length;
             global_obj->width = lidar_obj->width;
             global_obj->height = lidar_obj->height;
+            global_obj->theta = lidar_obj->theta;
             int dura = global_obj_list_->objs[m.second]->life_duration;
             global_obj_list_->objs[m.second]->life_duration =  (dura < startup_duration_ ? dura+1 : startup_duration_);
             std::cout << "updating exist global object: " << global_obj_list_->objs[m.second]->ToString() << std::endl;
@@ -63,6 +64,7 @@ bool Tracker::Update(const LiDARObjectListPtr &lidar_obj_list,
             new_obj->length = lidar_obj->length;
             new_obj->width = lidar_obj->width;
             new_obj->height = lidar_obj->height;
+            new_obj->theta = lidar_obj->theta;
             new_obj->velo_x = lidar_obj->velo_x;
             new_obj->velo_y = lidar_obj->velo_y;
             new_obj->velo_z = lidar_obj->velo_z;
@@ -123,7 +125,7 @@ bool Tracker::Update(const CameraObjectListPtr &camera_obj_list,
             cam_mea.time_ns = cam_obj->time_ns;
             cam_mea.sensor_type = SensorType::CAMERA;
             Eigen::VectorXd meas(5);
-            meas << cam_obj->ux, cam_obj->vy, cam_obj->width, cam_obj->height, float(cam_obj->label);
+            meas << cam_obj->ux, cam_obj->vy, cam_obj->width_2d, cam_obj->height_2d, float(cam_obj->label);
             cam_mea.meas = meas;
             std::cout << "cam mea: " << cam_obj->ToString() << std::endl;
 

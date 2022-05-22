@@ -34,6 +34,7 @@ struct BBox3D {
     float width = 0.0f;
     float height = 0.0f;
     float length = 0.0f;
+    float theta = 0.0f;
 };
 
 struct RadarObject {
@@ -77,18 +78,31 @@ using RadarObjectListConstPtr = std::shared_ptr<const RadarObjectList>;
 struct CameraObject {
     double time_ns = 0.0f;
     int id = -1;
-    float ux = 0.0;
-    float vy = 0.0;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float length = 0.0f;
     float width = 0.0f;
     float height = 0.0f;
+    float theta = 0.0f;
+    float velo_x = 0.0f;
+    float velo_y = 0.0f;
+    float velo_z = 0.0f;
+    float ux = 0.0f;
+    float vy = 0.0f;
+    float width_2d = 0.0f;
+    float height_2d = 0.0f;
     int label = -1;
     float confidence = 0.0f;
 
     std::string ToString() const {
         std::ostringstream oss;
-        oss << "time_ns: " << time_ns << ", id: " << id << ", bbox_2d=("
-            << ux << ", " << vy << ", " << width << ", " << height
-            << "), label=" << label << ", confidence=" << confidence;
+        oss << "time_ns: " << time_ns << ", id: " << id << ", (x, y, z)=(" << x
+            << ", " << y << ", " << z << "), (vx, vy, vz)=(" << velo_x << ", "
+            << velo_y << ", " << velo_z << "), (label, confidence)=(" << label
+            << ", " << confidence << "), bbox_3d=(" << length << ", " << width
+            << ", " << height << "), bbox_2d=(" << ux << ", " << vy << ", "
+            << width_2d << ", " << height_2d << ")";
         return oss.str();
     }
 };
@@ -118,6 +132,7 @@ struct LiDARObject {
     float length = 0.0f;
     float width = 0.0f;
     float height = 0.0f;
+    float theta = 0.0f;
     float velo_x = 0.0f;
     float velo_y = 0.0f;
     float velo_z = 0.0f;
@@ -160,6 +175,7 @@ struct FusionObject {
     float length = 0.0f;
     float width = 0.0f;
     float height = 0.0f;
+    float theta = 0.0f;
     float velo_x = 0.0f;
     float velo_y = 0.0f;
     float velo_z = 0.0f;

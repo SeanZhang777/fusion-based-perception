@@ -140,37 +140,39 @@ float IoUIn2D(const BBox2D &pred, const BBox2D &tgt) {
 }
 
 float IoUIn3D(const LiDARObjectPtr& local, const FusionObjectPtr& global) {
-    // treat 3D box as BEV 2D box
-    BBox2D pred, tgt;
+    // // treat 3D box as BEV 2D box
+    // BBox2D pred, tgt;
 
-    pred.x = local->x - global->x;
-    pred.y = local->y - global->y;
-    pred.height = local->length;
-    pred.width = local->width;
+    // pred.x = local->x - global->x;
+    // pred.y = local->y - global->y;
+    // pred.height = local->length;
+    // pred.width = local->width;
 
-    tgt.x = 0;
-    tgt.y = 0;
-    tgt.height = global->length;
-    tgt.width = global->width;
-    return  IoUIn2D(pred, tgt);
+    // tgt.x = 0;
+    // tgt.y = 0;
+    // tgt.height = global->length;
+    // tgt.width = global->width;
+    // return  IoUIn2D(pred, tgt);
 
     // treat 3D box as box with pose
-    // BBox3D pred, tgt;
-    // pred.x = local->x;
-    // pred.y = local->y;
-    // pred.z = local->z;
-    // pred.length = local->length;
-    // pred.width = local->width;
-    // pred.height = local->height;
+    BBox3D pred, tgt;
+    pred.x = local->x;
+    pred.y = local->y;
+    pred.z = local->z;
+    pred.length = local->length;
+    pred.width = local->width;
+    pred.height = local->height;
+    pred.theta = local->theta;
 
-    // tgt.x = global->x;
-    // tgt.y = global->y;
-    // tgt.z = global->z;
-    // tgt.length = global->length;
-    // tgt.width = global->width;
-    // tgt.height = global->height;
-    // 
-    // return IoUIn3D(pred, tgt);
+    tgt.x = global->x;
+    tgt.y = global->y;
+    tgt.z = global->z;
+    tgt.length = global->length;
+    tgt.width = global->width;
+    tgt.height = global->height;
+    tgt.theta = global->theta;
+    
+    return IoUIn3D(pred, tgt);
 }
 
 float IoUIn3D(const BBox3D &pred, const BBox3D& tgt) {

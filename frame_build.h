@@ -25,4 +25,10 @@ namespace proto_input
 
     kit::perception::fusion::CameraObjectPtr makeCameraObjectPtr(CameraObject raw_co, double time);
 
+    Eigen::Affine3d Pose2Affine(const proto_input::Location &pose);
+
+    void TransformLiDAR2Baselink(const proto_input::Location &pose, LidarObject& raw_lo);
+
+    void TransformCamera2Baselink(const proto_input::Location &pose, CameraObject& raw_co);
+
 }
