@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "iou3d.h"
 
 namespace kit {
 namespace perception {
@@ -155,24 +156,11 @@ float IoUIn3D(const LiDARObjectPtr& local, const FusionObjectPtr& global) {
     // return  IoUIn2D(pred, tgt);
 
     // treat 3D box as box with pose
-    BBox3D pred, tgt;
-    pred.x = local->x;
-    pred.y = local->y;
-    pred.z = local->z;
-    pred.length = local->length;
-    pred.width = local->width;
-    pred.height = local->height;
-    pred.theta = local->theta;
-
-    tgt.x = global->x;
-    tgt.y = global->y;
-    tgt.z = global->z;
-    tgt.length = global->length;
-    tgt.width = global->width;
-    tgt.height = global->height;
-    tgt.theta = global->theta;
-    
-    return IoUIn3D(pred, tgt);
+    float pred[7] = {local->x, local->y, local->z,
+                     local->length, local->width, local->height, local->theta};
+    float tgt[7] = {global->x, global->y, global->z,
+                    global->length, global->width, global->height, global->theta};
+    return pcdet::GetIou3d(pred, tgt);
 }
 
 float IoUIn3D(const BBox3D &pred, const BBox3D& tgt) {
